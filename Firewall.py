@@ -3,7 +3,7 @@ import os
 import sys
 import time
 from collections import defaultdict
-from scapy.all import sniff
+from scapy.all import *
 from scapy.layers.inet import IP
 
 # Firewall Project
@@ -12,18 +12,27 @@ from scapy.layers.inet import IP
  To-Do
 
 - Detecting and blocking of IP packets being received (Using Scapy.sniff?)
-- Whitelist
+- Whitelist 
 - Blacklist
 - DDOS Protection
 
 """
+# Completely Unfinished
+def firewall(current_packet):
+    # Grabs IP from packet
+    ip = current_packet[IP].src
 
-def firewall(packet):
-    ip = packet[IP].src #Grabs IP from packet
+
+    # Returns if IP is in whitelist
+    if ip in wlist_ips:
+        return
+
+    if ip in blist_ips:
+        print(ip, " is blocked")
+
 
 
 if __name__ == "__main__":
-
     # Ability to add IPs to blacklist's manually
     add_ip = 'b'
     while add_ip != 'y' and add_ip != 'n':
@@ -49,5 +58,14 @@ if __name__ == "__main__":
             blist = open('blacklist.txt', 'a')
             blist.close()
 
+
+    # Create set for whitelist and blacklist
+    wlist = open('whitelist.txt', 'r')
+    wlist_ips = wlist.readlines()
+
+    blist = open('blacklist.txt', 'r')
+    blist_ips = blist.readlines()
+
+    # Grabs IP and sends it's packet to firewall function
     print("Detecting IP's...")
-    sniff(filter="ip", prn=firewall) #Grabs IP and sends it's packet to firewall function
+    sniff(filter="ip", prn=firewall)
