@@ -1,11 +1,7 @@
 
-import os
-import sys
-import time
 from scapy.all import *
 from scapy.layers.inet import IP
 import ctypes
-import subprocess
 
 # Firewall Project
 
@@ -19,9 +15,15 @@ import subprocess
 
 """
 
+# Use this to wipe the blocklist in case of  emergency
+def clear_blocklist(list_ips):
+    for ip in list_ips:
+        ip_unblock(ip)
+
 # These don't work yet!! Incorrect rule being sent to system?
 def ip_unblock(ip):
-    os.system(f'netsh advfirewall firewall delete rule name="BlockIP-{ip}"')
+    message = f'netsh advfirewall firewall delete rule name="BlockIP-{ip}"'
+    os.system(message)
     print(ip, " is unblocked!")
 
 
@@ -29,12 +31,10 @@ def ip_block(ip):
     # Sends a command to block IP on Windows Computer
     message = f'netsh advfirewall firewall add rule name="BlockIP-{ip}" dir=in interface=any action=block remoteip={ip}'
     os.system(message)
-    print(ip, " is blocked!")
 
 
-# Completely Unfinished, uhhhhh nothing  works yet
+# Completely Unfinished
 def firewall(current_packet):
-    print("Made it here!")
 
     # Grabs IP from packet
     ip = current_packet[IP].src
@@ -46,15 +46,22 @@ def firewall(current_packet):
     # Blocks IP if it is in blocklist
     if ip in blist_ips:
        ip_block(ip)
+       print(ip, " is blocked!")
+
 
     # Number of packets counter
-    pack_count[ip] += 1
+    if ip in pack_count:
+        pack_count[ip] += 1
+
+    else:
+        pack_count[ip] = 1
 
     # Interval between start time and current time
-    t_interval = time.time() - t_start[0]
+    real_time = time.time()
+    t_interval = real_time - t_start[0]
 
     # Checks if 1 second has passed, if so start checking for DDOS
-    if t_interval > 1:
+    if t_interval > 1000000000:
 
         for ip, count in pack_count.items():
             rate = count / t_interval
@@ -62,18 +69,19 @@ def firewall(current_packet):
             if rate > max_packets:
                 print("High packet rate detected! Source: ", ip)
 
-            if ip not in blist_ips:
-                blist = open('blacklist.txt', 'a')
-                blist.write(ip)
-                blist.write('\n')
-                blist.close()
+                if ip not in blist_ips:
+                    blist = open('blacklist.txt', 'a')
+                    blist.write(ip)
+                    blist.write('\n')
+                    blist.close()
 
-                blist_ips.append(ip)
-                ip_block(ip)
+                    blist_ips.append(ip)
+                    ip_block(ip)
+                    print(ip, " is now blocked!")
 
         # Now that DDOS is checked, reset for next time
         pack_count.clear()
-        t_start[0] = time.time()
+        t_start[0] = real_time
 
 def settings():
 
@@ -165,7 +173,6 @@ if __name__ == "__main__":
     # Starting time to be used in DDOS tracker
     t_start = [time.time()]
 
-    print(max_packets)
 
     # Grabs IP and sends it's packet to firewall function
     print("Detecting IP's...")
