@@ -61,12 +61,12 @@ def firewall(current_packet):
     t_interval = real_time - t_start[0]
 
     # Checks if 1 second has passed, if so start checking for DDOS
-    if t_interval > 1000000000:
+    if t_interval > 1:
 
         for ip, count in pack_count.items():
             rate = count / t_interval
 
-            if rate > max_packets:
+            if rate > max_rate:
                 print("High packet rate detected! Source: ", ip)
 
                 if ip not in blist_ips:
@@ -86,7 +86,7 @@ def firewall(current_packet):
 def settings():
 
     # Default max packets, initialized here to be returned
-    new_max_packets = 50
+    new_max_rate = 50
 
     # Create while loop to stay on settings
     setting_leave = False
@@ -122,13 +122,13 @@ def settings():
         # Number to determine how sensitive the firewall will be to DDOS Attacks
         if settings_choice == 3:
             value = input("\nHow sensitive would you like the firewall to be when preventing DDOS Attacks?\nThe higher the more sensitive.\nPlease enter 0-100 (If unsure, do 50)\n")
-            new_max_packets = int(value)
+            new_max_rate = int(value)
 
         if settings_choice == 4:
             setting_leave = True
 
 
-    return new_max_packets
+    return new_max_rate
 
 
 if __name__ == "__main__":
@@ -138,7 +138,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     # Default max_packets
-    max_packets = 50
+    max_rate = 50
 
     # While loop to ask what to do in program
     leave = False
@@ -153,7 +153,7 @@ if __name__ == "__main__":
             leave = True
 
         if choice == 2:
-            max_packets = settings()
+            max_rate = settings()
 
         if choice == 3:
             sys.exit(0)
