@@ -12,8 +12,6 @@ from scapy.all import *
 from scapy.layers.inet import *
 from scapy.layers.l2 import Ether
 
-NUM_PACKETS = 100
-DURATION = 5
 
 # Sends packets to target IP using selected attack mode
 def send_packets(target_ip, interface, num_packets, duration, mode="ddos"):
@@ -32,13 +30,12 @@ def send_packets(target_ip, interface, num_packets, duration, mode="ddos"):
         packet_count += 1
 
 if __name__ == "__main__":
-    if sys.version_info[0] < 3:
-        print("This script requires Python 3.")
-        sys.exit(1)
 
     # Default values for testing
     interface = "Realtek PCIe GbE Family Controller"
     ip = "192.168.0.12"
+    packet_number = 500
+    duration = 5
 
     # Select attack type
     print("Select attack type:")
@@ -51,4 +48,4 @@ if __name__ == "__main__":
     else:
         attack_mode = "ddos"
 
-    send_packets(ip, interface, NUM_PACKETS, DURATION, mode=attack_mode)
+    send_packets(ip, interface, packet_number, duration, mode=attack_mode)

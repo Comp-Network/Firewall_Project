@@ -112,7 +112,7 @@ def firewall(current_packet):
         for ip, count in pack_count.items():
             rate = count / t_interval
 
-            if rate > max_rate:
+            if rate > (max_rate * 5):
                 print("High packet rate detected! Source: ", ip)
 
                 if ip not in blist_ips:
@@ -130,7 +130,6 @@ def firewall(current_packet):
         t_start[0] = real_time
 
 def settings():
-
     # Default max packets, initialized here to be returned
     new_max_rate = 50
 
@@ -139,8 +138,8 @@ def settings():
     while not setting_leave:
 
         settings_choice = 0
-        while 1 > settings_choice or settings_choice > 4:
-            settings_choice = input("What would you like to do?\n1. Add to Blacklist\n2. Add to Whitelist\n3. Adjust DDOS Sensitivity\n4. Exit\n")
+        while 1 > settings_choice or settings_choice > 5:
+            settings_choice = input("What would you like to do?\n1. Add to Blacklist\n2. Add to Whitelist\n3. Adjust DDOS Sensitivity\n4. Clear Blocklist\n5. Exit\n")
             settings_choice = int(settings_choice)
 
         # Add to blacklist
@@ -167,23 +166,39 @@ def settings():
 
         # Number to determine how sensitive the firewall will be to DDOS Attacks
         if settings_choice == 3:
-            value = input("\nHow sensitive would you like the firewall to be when preventing DDOS Attacks?\nThe higher the more sensitive.\nPlease enter 0-100 (If unsure, do 50)\n")
+            value = input(
+                "\nHow sensitive would you like the firewall to be when preventing DDOS Attacks?\nThe higher the more sensitive.\nPlease enter 0-100 (If unsure, do 50)\n")
             new_max_rate = int(value)
 
+        # Clear the blocklist
         if settings_choice == 4:
+            clear_blocklist(blist_ips)
+            open("blacklist.txt", "w").close()
+            blist_ips.clear()
+
+        # Exit back to main menu
+        if settings_choice == 5:
             setting_leave = True
 
     return new_max_rate
 
 
 if __name__ == "__main__":
-    #Checks if program is running with needed admin privileges
+    # Checks if program is running with needed admin privileges
     if not ctypes.windll.shell32.IsUserAnAdmin():
         print("Admin Privileges required to run program!")
         sys.exit(1)
 
     # Default max_packets
     max_rate = 50
+
+    wlist = open('whitelist.txt', 'r')
+    wlist_ips = wlist.read().splitlines()
+    wlist.close()
+
+    blist = open('blacklist.txt', 'r')
+    blist_ips = blist.read().splitlines()
+    blist.close()
 
     # While loop to ask what to do in program
     leave = False
@@ -203,16 +218,7 @@ if __name__ == "__main__":
         if choice == 3:
             sys.exit(0)
 
-    # Create sets for whitelist and blacklist
-    wlist = open('whitelist.txt', 'r')
-    wlist_ips = wlist.read().splitlines()
-    wlist.close()
-
-    blist = open('blacklist.txt', 'r')
-    blist_ips = blist.read().splitlines()
-    blist.close()
-
-    #Dictonary to count number of packets from IP
+    # Dictionary to count number of packets from IP
     pack_count = {}
 
     # Starting time to be used in DDOS tracker
