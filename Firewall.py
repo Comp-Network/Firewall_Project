@@ -1,7 +1,9 @@
-
 from scapy.all import *
 from scapy.layers.inet import IP
 import ctypes
+import os
+import time
+import re
 
 # Firewall Project
 
@@ -12,10 +14,22 @@ import ctypes
 - Whitelist 
 - Blacklist
 - DDOS Protection
-
+- Signature-Based Detection (added)
+- Subnet-Based Blocking (added)
 """
 
-# Use this to wipe the blocklist in case of  emergency
+# Signature patterns for signature-based detection (simulating antigen recognition)
+signature_patterns = [
+    r"GET\s+/scripts/root\.exe",         # Nimda worm
+    r"cmd\.exe",                         # Command execution
+    r"powershell",                       # Powershell access
+    r"/bin/bash",                        # Linux shell
+    r"wget\s+http",                      # Attempt to fetch file
+    r"net\s+user",                       # User enumeration
+    r"Content-Disposition:\s+form-data"  # File upload
+]
+
+# Use this to wipe the blocklist in case of emergency
 def clear_blocklist(list_ips):
     for ip in list_ips:
         ip_unblock(ip)
@@ -26,12 +40,10 @@ def ip_unblock(ip):
     os.system(message)
     print(ip, " is unblocked!")
 
-
 def ip_block(ip):
     # Sends a command to block IP on Windows Computer
     message = f'netsh advfirewall firewall add rule name="BlockIP-{ip}" dir=in interface=any action=block remoteip={ip}'
     os.system(message)
-
 
 # Completely Unfinished
 def firewall(current_packet):
@@ -47,7 +59,41 @@ def firewall(current_packet):
     if ip in blist_ips:
        ip_block(ip)
        print(ip, " is blocked!")
+       return
 
+    # Signature-based detection
+    if current_packet.haslayer(Raw):
+        payload = str(current_packet[Raw].load)
+
+        for pattern in signature_patterns:
+            if re.search(pattern, payload, re.IGNORECASE):
+                print(f"[SIGNATURE DETECTED] Suspicious content from {ip}: matched {pattern}")
+
+                if ip not in blist_ips:
+                    with open('blacklist.txt', 'a') as blist:
+                        blist.write(ip + '\n')
+                    blist_ips.append(ip)
+                    ip_block(ip)
+                    print(f"[BLOCKED] {ip} has been blacklisted due to signature match.")
+
+                    # Subnet blocking based on detected malicious IP
+                    try:
+                        subnet_prefix = ".".join(ip.split(".")[:3])
+                        last_octet = int(ip.split(".")[3])
+                        for offset in range(-2, 3):
+                            neighbor_octet = last_octet + offset
+                            if 1 <= neighbor_octet <= 254:
+                                neighbor_ip = f"{subnet_prefix}.{neighbor_octet}"
+                                if neighbor_ip != ip and neighbor_ip not in blist_ips:
+                                    with open('blacklist.txt', 'a') as blist:
+                                        blist.write(neighbor_ip + '\n')
+                                    blist_ips.append(neighbor_ip)
+                                    ip_block(neighbor_ip)
+                                    print(f"[SUBNET BLOCK] {neighbor_ip} blocked (related to {ip})")
+                    except Exception as e:
+                        print("Subnet block error:", e)
+
+                return
 
     # Number of packets counter
     if ip in pack_count:
@@ -127,7 +173,6 @@ def settings():
         if settings_choice == 4:
             setting_leave = True
 
-
     return new_max_rate
 
 
@@ -172,7 +217,6 @@ if __name__ == "__main__":
 
     # Starting time to be used in DDOS tracker
     t_start = [time.time()]
-
 
     # Grabs IP and sends it's packet to firewall function
     print("Detecting IP's...")
