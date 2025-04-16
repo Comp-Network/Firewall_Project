@@ -45,7 +45,7 @@ def ip_block(ip):
     message = f'netsh advfirewall firewall add rule name="BlockIP-{ip}" dir=in interface=any action=block remoteip={ip}'
     os.system(message)
 
-# Completely Unfinished
+# Main firewall function
 def firewall(current_packet):
 
     # Grabs IP from packet
@@ -57,9 +57,11 @@ def firewall(current_packet):
 
     # Blocks IP if it is in blocklist
     if ip in blist_ips:
-       ip_block(ip)
-       print(ip, " is blocked!")
-       return
+        if ip not in block_tracker:
+            ip_block(ip)
+            print(ip, " is blocked!")
+            block_tracker.append(ip)
+        return
 
     # Signature-based detection
     if current_packet.haslayer(Raw):
@@ -112,8 +114,8 @@ def firewall(current_packet):
         for ip, count in pack_count.items():
             rate = count / t_interval
 
-            if rate > (max_rate * 5):
-                print("High packet rate detected! Source: ", ip)
+            if rate > (max_rate * 10):
+                print("High packet rate detected! Source:", ip)
 
                 if ip not in blist_ips:
                     blist = open('blacklist.txt', 'a')
@@ -124,10 +126,12 @@ def firewall(current_packet):
                     blist_ips.append(ip)
                     ip_block(ip)
                     print(ip, " is now blocked!")
+                    block_tracker.append(ip)
 
         # Now that DDOS is checked, reset for next time
         pack_count.clear()
         t_start[0] = real_time
+
 
 def settings():
     # Default max packets, initialized here to be returned
@@ -220,6 +224,9 @@ if __name__ == "__main__":
 
     # Dictionary to count number of packets from IP
     pack_count = {}
+
+    # Tracks how many times I blocked IP it detected, only displays that's its blocked every 5 times
+    block_tracker = []
 
     # Starting time to be used in DDOS tracker
     t_start = [time.time()]

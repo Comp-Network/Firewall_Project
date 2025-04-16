@@ -32,10 +32,11 @@ def send_packets(target_ip, interface, num_packets, duration, mode="ddos"):
 if __name__ == "__main__":
 
     # Default values for testing
-    interface = "Realtek PCIe GbE Family Controller"
-    ip = "192.168.0.12"
-    packet_number = 500
+    packet_number = 1000
     duration = 5
+
+    ip = input("Please enter the target IP: ")
+    interface = input("Please enter the target interface: ")
 
     # Select attack type
     print("Select attack type:")
